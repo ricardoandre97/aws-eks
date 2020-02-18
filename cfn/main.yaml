@@ -1,0 +1,72 @@
+Description: AWS CFN for EKS Cluster
+
+Parameters:
+
+  Project:
+    Type: String
+    Description: This tag will be applied to all the resources
+
+  TemplateBucket:
+    Type: String
+    Description: The bucket where all the templates live
+
+  VpcBlock:
+    Type: String
+    Default: 192.168.0.0/16
+    Description: The CIDR range for the VPC. This should be a valid private (RFC 1918) CIDR range.
+
+  PublicSubnet01Block:
+    Type: String
+    Default: 192.168.0.0/18
+    Description: CidrBlock for public subnet 01 within the VPC
+
+  PublicSubnet02Block:
+    Type: String
+    Default: 192.168.64.0/18
+    Description: CidrBlock for public subnet 02 within the VPC
+
+  PrivateSubnet01Block:
+    Type: String
+    Default: 192.168.128.0/18
+    Description: CidrBlock for private subnet 01 within the VPC
+
+  PrivateSubnet02Block:
+    Type: String
+    Default: 192.168.192.0/18
+    Description: CidrBlock for private subnet 02 within the VPC
+
+  ClusterName:
+    Type: String
+    Description: EKS Cluster Name
+
+
+Resources:
+
+  VPC:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplateBucket}/templates/vpc.yaml
+      Parameters:
+        VpcBlock: !Ref VpcBlock
+        PublicSubnet01Block: !Ref PublicSubnet01Block
+        PublicSubnet02Block: !Ref PublicSubnet02Block
+        PrivateSubnet01Block: !Ref PrivateSubnet01Block
+        PrivateSubnet02Block: !Ref PrivateSubnet02Block
+        Project: !Ref Project
+
+  SecGroups:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplateBucket}/templates/secgroups.yaml
+      Parameters:
+        VPC: !GetAtt VPC.Outputs.VpcId
+        Project: !Ref Project
+
+  EKS:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplateBucket}/templates/eks-cluster.yaml
+      Parameters:
+        ClusterName: !Ref ClusterName
+        EKSSecurityGroup: !GetAtt SecGroups.Outputs.EKSSecurityGroup
+        Subnets: !GetAtt VPC.Outputs.SubnetIds
