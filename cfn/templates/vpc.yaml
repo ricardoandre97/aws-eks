@@ -256,3 +256,11 @@ Outputs:
   VpcId:
     Description: The VPC Id
     Value: !Ref VPC
+
+  PrivateSubnets:
+    Description: Subnets IDs in the VPC
+    Value: !Join [ ",", [ !Ref PrivateSubnet01, !Ref PrivateSubnet02 ] ]
+
+  PublicSubnets:
+    Description: Subnets IDs in the VPC
+    Value: !Join [ ",", [ !Ref PublicSubnet01, !Ref PublicSubnet02 ] ]

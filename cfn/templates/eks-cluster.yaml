@@ -3,16 +3,27 @@ Description: 'Amazon EKS Cluster'
 
 Parameters:
 
-  ClusterName:
-    Type: String
-
-  EKSSecurityGroup:
-    Type: String
-
   Subnets:
     Type: List<AWS::EC2::Subnet::Id>
 
+  Project:
+    Type: String
+
+  VPC:
+    Type: String
+
 Resources:
+
+  ClusterControlPlaneSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Cluster communication with worker nodes
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-ClusterControlPlaneSecurityGroup"
+        - Key: Project
+          Value: !Ref Project
 
   AWSServiceRoleForAmazonEKS:
     Type: AWS::IAM::Role
@@ -33,19 +44,23 @@ Resources:
   EKSCluster:
     Type: "AWS::EKS::Cluster"
     Properties:
-      Name: !Ref ClusterName
       ResourcesVpcConfig: 
         SecurityGroupIds:
-          - !Ref EKSSecurityGroup
+          - !Ref ClusterControlPlaneSecurityGroup
         SubnetIds: !Ref Subnets
       RoleArn: !GetAtt AWSServiceRoleForAmazonEKS.Arn
+      Version: 1.14
 
 Outputs:
 
   EKSClusterName:
     Value: !Ref EKSCluster
-    Description: EKS ClusterNameL
+    Description: EKS ClusterName
 
   RoleArn:
     Description: The role that EKS will use to create AWS resources for Kubernetes clusters
     Value: !GetAtt AWSServiceRoleForAmazonEKS.Arn
+
+  ClusterControlPlane:
+    Description: Security group for the cluster control plane communication with worker nodes
+    Value: !Ref ClusterControlPlaneSecurityGroup

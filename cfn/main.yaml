@@ -35,10 +35,21 @@ Parameters:
     Default: 192.168.192.0/18
     Description: CidrBlock for private subnet 02 within the VPC
 
-  ClusterName:
-    Type: String
-    Description: EKS Cluster Name
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Key to connect to nodes
 
+  NodeAutoScalingGroupMinSize:
+    Type: String
+
+  NodeAutoScalingGroupMaxSize:
+    Type: String
+
+  DesiredCapacity:
+    Type: String
+
+  NodeInstanceType:
+    Type: String
 
 Resources:
 
@@ -54,19 +65,33 @@ Resources:
         PrivateSubnet02Block: !Ref PrivateSubnet02Block
         Project: !Ref Project
 
-  SecGroups:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${TemplateBucket}/templates/secgroups.yaml
-      Parameters:
-        VPC: !GetAtt VPC.Outputs.VpcId
-        Project: !Ref Project
-
-  EKS:
+  EKSCluster:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub https://s3.amazonaws.com/${TemplateBucket}/templates/eks-cluster.yaml
       Parameters:
-        ClusterName: !Ref ClusterName
-        EKSSecurityGroup: !GetAtt SecGroups.Outputs.EKSSecurityGroup
         Subnets: !GetAtt VPC.Outputs.SubnetIds
+        Project: !Ref Project
+        VPC: !GetAtt VPC.Outputs.VpcId
+
+  EKSNodeGroup:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplateBucket}/templates/node-group.yaml
+      Parameters:
+        Project: !Ref Project
+        VPC: !GetAtt VPC.Outputs.VpcId
+        Subnets: !GetAtt VPC.Outputs.PrivateSubnets
+        KeyName: !Ref KeyName
+        NodeInstanceType: t2.medium
+        NodeAutoScalingGroupMinSize: !Ref NodeAutoScalingGroupMinSize
+        NodeAutoScalingGroupMaxSize: !Ref NodeAutoScalingGroupMaxSize
+        DesiredCapacity: !Ref DesiredCapacity
+        ClusterName: !GetAtt EKSCluster.Outputs.EKSClusterName
+        NodeGroupName: k8s-test1
+        ClusterControlPlaneSecurityGroup: !GetAtt EKSCluster.Outputs.ClusterControlPlane
+
+Outputs:
+  NodeInstanceRole:
+    Description: The node instance role
+    Value: !GetAtt EKSNodeGroup.Outputs.NodeInstanceRole
