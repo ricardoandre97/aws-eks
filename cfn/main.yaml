@@ -95,3 +95,6 @@ Outputs:
   NodeInstanceRole:
     Description: The node instance role
     Value: !GetAtt EKSNodeGroup.Outputs.NodeInstanceRole
+  EKSCluster:
+    Description: The cluster name
+    Value: !GetAtt EKSCluster.Outputs.EKSClusterName

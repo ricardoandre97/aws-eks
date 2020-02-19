@@ -33,6 +33,11 @@ aws cloudformation deploy --template-file ./cfn/main.yaml    \
     DesiredCapacity=$DESIRED_NODES                           \
     NodeInstanceType=$INSTANCE_TYPE
 
+# Configuring cluster access
+CLUSTER_NAME=$(aws cloudformation describe-stacks --stack-name=$PROJECT --region $AWS_DEFAULT_REGION --query "Stacks[0].Outputs[?OutputKey=='EKSCluster'].OutputValue" --output text)
+echo "Configuring local access to the cluster..."
+aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_DEFAULT_REGION
+
 # Get the NodeRole
 NODE_ROLE=$(aws cloudformation describe-stacks --stack-name=$PROJECT --region $AWS_DEFAULT_REGION --query "Stacks[0].Outputs[?OutputKey=='NodeInstanceRole'].OutputValue" --output text)
 
