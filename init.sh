@@ -1,11 +1,13 @@
 #!/bin/bash
+set -e
+
 AWS_DEFAULT_REGION=us-east-1
 CFN_BUCKET=cfn-eks-bucket
 PROJECT=eks-cool-project
 KEY_NAME=eks-test-key
-MIN_NODES=1
+MIN_NODES=0
 MAX_NODES=3
-DESIRED_NODES=2
+DESIRED_NODES=1
 INSTANCE_TYPE=t2.medium
 
 # Create the ssh key
@@ -34,11 +36,12 @@ aws cloudformation deploy --template-file ./cfn/main.yaml    \
     NodeInstanceType=$INSTANCE_TYPE
 
 # Configuring cluster access
-CLUSTER_NAME=$(aws cloudformation describe-stacks --stack-name=$PROJECT --region $AWS_DEFAULT_REGION --query "Stacks[0].Outputs[?OutputKey=='EKSCluster'].OutputValue" --output text)
 echo "Configuring local access to the cluster..."
+CLUSTER_NAME=$(aws cloudformation describe-stacks --stack-name=$PROJECT --region $AWS_DEFAULT_REGION --query "Stacks[0].Outputs[?OutputKey=='EKSCluster'].OutputValue" --output text)
 aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_DEFAULT_REGION
 
-# Get the NodeRole
+# Apply config
+echo "Applying configuration for aws nodes to join the cluster..."
 NODE_ROLE=$(aws cloudformation describe-stacks --stack-name=$PROJECT --region $AWS_DEFAULT_REGION --query "Stacks[0].Outputs[?OutputKey=='NodeInstanceRole'].OutputValue" --output text)
 
 # Create the aws configmap to join the nodes
@@ -57,8 +60,10 @@ data:
         - system:bootstrappers
         - system:nodes
 EOF
-
-# Apply config
-echo "Applying configuration for aws nodes to join the cluster..."
 kubectl apply -f aws-auth.yaml
+
+# Apply autoscaler
+echo "Applying autoscaler config"
+sed -i "s/{CLUSTERNAME}/$CLUSTER_NAME/g" misc/autoscaler.yaml
+kubectl apply -f misc/autoscaler.yaml
 echo -e "\e[32mEnjoy :)\e[0m"
