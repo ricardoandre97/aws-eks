@@ -228,17 +228,110 @@ Resources:
       Policies:
           ## NEEDED BY CLUSTER AUTOSCALER
           ## https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/aws/README.md
-        - PolicyName: "EKSNodesAutoScaling"
+        - PolicyName: !Sub "EKSNodesAutoScaling-${NodeGroupName}"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-            - {Action: 'autoscaling:DescribeTags', Effect: Allow, Resource: '*'}
-            - {Action: 'autoscaling:DescribeAutoScalingGroups', Effect: Allow, Resource: '*'}
-            - {Action: 'autoscaling:DescribeAutoScalingInstances', Effect: Allow, Resource: '*'}
-            - {Action: 'autoscaling:DescribeLaunchConfigurations', Effect: Allow, Resource: '*'}
-            - {Action: 'autoscaling:DescribeScalingActivities', Effect: Allow, Resource: '*'}
-            - {Action: 'autoscaling:SetDesiredCapacity', Effect: Allow, Resource: '*'}
-            - {Action: 'autoscaling:TerminateInstanceInAutoScalingGroup', Effect: Allow, Resource: '*'}
+            - Action:
+                - 'autoscaling:DescribeTags'
+                - 'autoscaling:DescribeAutoScalingGroups'
+                - 'autoscaling:DescribeAutoScalingInstances'
+                - 'autoscaling:DescribeLaunchConfigurations'
+                - 'autoscaling:DescribeScalingActivities'
+                - 'autoscaling:SetDesiredCapacity'
+                - 'autoscaling:TerminateInstanceInAutoScalingGroup'
+              Effect: Allow
+              Resource: "*"
+          ## Uncomment this if you are going to use the AWS ALB Ingress Controller
+          ## https://docs.aws.amazon.com/eks/latest/userguide/alb-ingress.html
+          ###############################################################
+        # - PolicyName: !Sub "EKSIngressProvisioning-${NodeGroupName}"
+        #   PolicyDocument:
+        #     Version: "2012-10-17"
+        #     Statement:
+        #     - Effect: Allow
+        #       Action:
+        #       - ec2:AuthorizeSecurityGroupIngress
+        #       - ec2:CreateSecurityGroup
+        #       - ec2:CreateTags
+        #       - ec2:DeleteTags
+        #       - ec2:DeleteSecurityGroup
+        #       - ec2:DescribeAccountAttributes
+        #       - ec2:DescribeAddresses
+        #       - ec2:DescribeInstances
+        #       - ec2:DescribeInstanceStatus
+        #       - ec2:DescribeInternetGateways
+        #       - ec2:DescribeNetworkInterfaces
+        #       - ec2:DescribeSecurityGroups
+        #       - ec2:DescribeSubnets
+        #       - ec2:DescribeTags
+        #       - ec2:DescribeVpcs
+        #       - ec2:ModifyInstanceAttribute
+        #       - ec2:ModifyNetworkInterfaceAttribute
+        #       - ec2:RevokeSecurityGroupIngress
+        #       Resource: "*"
+        #     - Effect: Allow
+        #       Action:
+        #       - elasticloadbalancing:AddListenerCertificates
+        #       - elasticloadbalancing:AddTags
+        #       - elasticloadbalancing:CreateListener
+        #       - elasticloadbalancing:CreateLoadBalancer
+        #       - elasticloadbalancing:CreateRule
+        #       - elasticloadbalancing:CreateTargetGroup
+        #       - elasticloadbalancing:DeleteListener
+        #       - elasticloadbalancing:DeleteLoadBalancer
+        #       - elasticloadbalancing:DeleteRule
+        #       - elasticloadbalancing:DeleteTargetGroup
+        #       - elasticloadbalancing:DeregisterTargets
+        #       - elasticloadbalancing:DescribeListenerCertificates
+        #       - elasticloadbalancing:DescribeListeners
+        #       - elasticloadbalancing:DescribeLoadBalancers
+        #       - elasticloadbalancing:DescribeLoadBalancerAttributes
+        #       - elasticloadbalancing:DescribeRules
+        #       - elasticloadbalancing:DescribeSSLPolicies
+        #       - elasticloadbalancing:DescribeTags
+        #       - elasticloadbalancing:DescribeTargetGroups
+        #       - elasticloadbalancing:DescribeTargetGroupAttributes
+        #       - elasticloadbalancing:DescribeTargetHealth
+        #       - elasticloadbalancing:ModifyListener
+        #       - elasticloadbalancing:ModifyLoadBalancerAttributes
+        #       - elasticloadbalancing:ModifyRule
+        #       - elasticloadbalancing:ModifyTargetGroup
+        #       - elasticloadbalancing:ModifyTargetGroupAttributes
+        #       - elasticloadbalancing:RegisterTargets
+        #       - elasticloadbalancing:RemoveListenerCertificates
+        #       - elasticloadbalancing:RemoveTags
+        #       - elasticloadbalancing:SetIpAddressType
+        #       - elasticloadbalancing:SetSecurityGroups
+        #       - elasticloadbalancing:SetSubnets
+        #       - elasticloadbalancing:SetWebACL
+        #       Resource: "*"
+        #     - Effect: Allow
+        #       Action:
+        #       - iam:CreateServiceLinkedRole
+        #       - iam:GetServerCertificate
+        #       - iam:ListServerCertificates
+        #       Resource: "*"
+        #     - Effect: Allow
+        #       Action:
+        #       - cognito-idp:DescribeUserPoolClient
+        #       Resource: "*"
+        #     - Effect: Allow
+        #       Action:
+        #       - waf-regional:GetWebACLForResource
+        #       - waf-regional:GetWebACL
+        #       - waf-regional:AssociateWebACL
+        #       - waf-regional:DisassociateWebACL
+        #       Resource: "*"
+        #     - Effect: Allow
+        #       Action:
+        #       - tag:GetResources
+        #       - tag:TagResources
+        #       Resource: "*"
+        #     - Effect: Allow
+        #       Action:
+        #       - waf:GetWebACL
+        #       Resource: "*"
 
   NodeGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
